@@ -5,7 +5,8 @@ sed -i --follow-symlinks 's/SELINUX=enforcing/SELINUX=disabled/g' /etc/sysconfig
 
 
 ### Задаем hostname и локальные записи DNS ########
-sudo hostnamectl master1
+hostnamectl set-hostname master1
+hostnamectl set-hostname workernode1
 cat << EOF >> /etc/hosts
 30.0.10.31 master1
 30.0.10.32 workernode1
@@ -60,6 +61,7 @@ EOF
 yum install -y kubelet kubeadm kubectl --disableexcludes=kubernetes
 systemctl enable kubelet
 systemctl start kubelet
+systemctl status kubelet
 yum install -y iproute-tc
 #####################
 
@@ -72,11 +74,11 @@ mkdir -p $HOME/.kube
 cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 chown $(id -u):$(id -g) $HOME/.kube/config
 
-### Разворачивание сети в кластере
+### Разворачивание сети в кластере  ##
 kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml
 
-## worker нода
-kubeadm join ip_or_dnsname:6443 --token=token --discovery-token-ca-cert-hash sha256:hash
+### Получение списка узлов и их состояние  ##
+kubectl get nodes
 #####################
 
 
@@ -84,4 +86,7 @@ kubeadm join ip_or_dnsname:6443 --token=token --discovery-token-ca-cert-hash sha
 kubeadm token create
 kubeadm token list
 openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | openssl rsa -pubin -outform der 2>/dev/null | openssl dgst -sha256 -hex | sed 's/^.* //'
+
+## подключение worker ноды  ##
+kubeadm join ip_or_dnsname:6443 --token=token --discovery-token-ca-cert-hash sha256:hash
 #####################
